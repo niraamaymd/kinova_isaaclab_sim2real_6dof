@@ -1,43 +1,73 @@
-seed: 42
-device: cuda:0
-num_steps_per_env: 24
-max_iterations: 1000
-empirical_normalization: false
-policy:
-  class_name: ActorCritic
-  init_noise_std: 1.0
-  noise_std_type: scalar
-  actor_hidden_dims:
-  - 64
-  - 64
-  critic_hidden_dims:
-  - 64
-  - 64
-  activation: elu
-algorithm:
-  class_name: PPO
-  value_loss_coef: 1.0
-  use_clipped_value_loss: true
-  clip_param: 0.2
-  entropy_coef: 0.001
-  num_learning_epochs: 8
-  num_mini_batches: 4
-  learning_rate: 0.001
-  schedule: adaptive
-  gamma: 0.99
-  lam: 0.95
-  desired_kl: 0.01
-  max_grad_norm: 1.0
-  normalize_advantage_per_mini_batch: false
-  symmetry_cfg: null
-  rnd_cfg: null
-clip_actions: null
-save_interval: 50
-experiment_name: reach_gen3
-run_name: ''
-logger: tensorboard
-neptune_project: isaaclab
-wandb_project: isaaclab
-resume: false
-load_run: .*
-load_checkpoint: model_.*.pt
+params:
+  algo:
+    name: a2c_continuous
+  config:
+    bounds_loss_coef: 0.0001
+    clip_actions: false
+    clip_value: true
+    critic_coef: 2
+    device: cuda:0
+    device_name: cuda:0
+    e_clip: 0.2
+    entropy_coef: 0.01
+    env_name: rlgpu
+    full_experiment_name: 2026-03-04_02-19-44
+    gamma: 0.99
+    grad_norm: 1.0
+    horizon_length: 24
+    kl_threshold: 0.01
+    learning_rate: 1e-3
+    lr_schedule: adaptive
+    max_epochs: 1000
+    mini_epochs: 5
+    minibatch_size: 24576
+    mixed_precision: false
+    multi_gpu: false
+    name: reach_gen3
+    normalize_advantage: true
+    normalize_input: true
+    normalize_value: true
+    num_actors: -1
+    ppo: true
+    print_stats: true
+    reward_shaper:
+      scale_value: 1.0
+    save_best_after: 200
+    save_frequency: 100
+    schedule_type: legacy
+    score_to_win: 10000
+    tau: 0.95
+    train_dir: /home/robotics/niraamay/IsaacLab/logs/rl_games/reach_gen3
+    truncate_grads: true
+    value_bootstrap: true
+  env:
+    clip_actions: 100.0
+    clip_observations: 100.0
+  load_checkpoint: false
+  load_path: ''
+  model:
+    name: continuous_a2c_logstd
+  network:
+    mlp:
+      activation: elu
+      d2rl: false
+      initializer:
+        name: default
+      regularizer:
+        name: None
+      units:
+      - 64
+      - 64
+    name: actor_critic
+    separate: false
+    space:
+      continuous:
+        fixed_sigma: true
+        mu_activation: None
+        mu_init:
+          name: default
+        sigma_activation: None
+        sigma_init:
+          name: const_initializer
+          val: 0
+  seed: 42

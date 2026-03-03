@@ -34,7 +34,6 @@ class Gen3ReachPolicy(PolicyController):
             "joint_4",
             "joint_5",
             "joint_6",
-            "joint_7",
         ]
         # Load the pre-trained policy model and environment configuration
         repo_root = Path(__file__).resolve().parents[3]
@@ -45,13 +44,13 @@ class Gen3ReachPolicy(PolicyController):
         )
 
         self._action_scale = 0.5
-        self._previous_action = np.zeros(7)
+        self._previous_action = np.zeros(6)
         self._policy_counter = 0
-        self.target_command = np.array([0.5, 0.0, 0.2, 0.7071, 0.0, 0.7071, 0.0])
+        self.target_command = np.array([0.5, 0.0, 0.7071, 0.0, 0.7071, 0.0])
 
         self.has_joint_data = False
-        self.current_joint_positions = np.zeros(7)
-        self.current_joint_velocities = np.zeros(7)
+        self.current_joint_positions = np.zeros(6)
+        self.current_joint_velocities = np.zeros(6)
 
     def update_joint_state(self, position, velocity) -> None:
         """
@@ -61,9 +60,10 @@ class Gen3ReachPolicy(PolicyController):
             position: A list or array of joint positions.
             velocity: A list or array of joint velocities.
         """
-        self.current_joint_positions = np.array(position[:self.num_joints], dtype=np.float32)
-        self.current_joint_velocities = np.array(velocity[:self.num_joints], dtype=np.float32)
+        self.current_joint_positions = np.array(position[:6], dtype=np.float32)
+        self.current_joint_velocities = np.array(velocity[:6], dtype=np.float32)
         self.has_joint_data = True
+
 
     def _compute_observation(self, command: np.ndarray) -> np.ndarray:
         """
@@ -77,11 +77,11 @@ class Gen3ReachPolicy(PolicyController):
         """
         if not self.has_joint_data:
             return None
-        obs = np.zeros(28)
-        obs[:7] = self.current_joint_positions - self.default_pos
-        obs[7:14] = self.current_joint_velocities
-        obs[14:21] = command
-        obs[21:28] = self._previous_action
+        obs = np.zeros(24)
+        obs[:6] = self.current_joint_positions - self.default_pos[:6]
+        obs[6:12] = self.current_joint_velocities
+        obs[12:18] = command
+        obs[18:24] = self._previous_action
         return obs
 
     def forward(self, dt: float, command: np.ndarray) -> np.ndarray:
@@ -102,22 +102,23 @@ class Gen3ReachPolicy(PolicyController):
             obs = self._compute_observation(command)
             if obs is None:
                 return None
+
             self.action = self._compute_action(obs)
             self._previous_action = self.action.copy()
 
-            # Debug Logging (commented out)
+            # Debug Logging
             print("\n=== Policy Step ===")
             print(f"{'Command:':<20} {np.round(command, 4)}\n")
             print("--- Observation ---")
             print(f"{'Δ Joint Positions:':<20} {np.round(obs[:6], 4)}")
             print(f"{'Joint Velocities:':<20} {np.round(obs[6:12], 4)}")
-            print(f"{'Command:':<20} {np.round(obs[12:19], 4)}")
-            print(f"{'Previous Action:':<20} {np.round(obs[19:25], 4)}\n")
+            print(f"{'Command:':<20} {np.round(obs[12:18], 4)}")
+            print(f"{'Previous Action:':<20} {np.round(obs[18:24], 4)}\n")
             print("--- Action ---")
             print(f"{'Raw Action:':<20} {np.round(self.action, 4)}")
-            processed_action = self.default_pos + (self.action * self._action_scale)
+            processed_action = self.default_pos[:6] + (self.action * self._action_scale)
             print(f"{'Processed Action:':<20} {np.round(processed_action, 4)}")
 
-        joint_positions = self.default_pos + (self.action * self._action_scale)
+        joint_positions = self.default_pos[:6] + (self.action * self._action_scale)
         self._policy_counter += 1
         return joint_positions

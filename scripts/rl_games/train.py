@@ -63,7 +63,9 @@ from isaaclab.envs import (
 )
 from isaaclab.utils.assets import retrieve_file_path
 from isaaclab.utils.dict import print_dict
-from isaaclab.utils.io import dump_pickle, dump_yaml
+
+import pickle 
+import yaml
 
 from isaaclab_rl.rl_games import RlGamesGpuEnv, RlGamesVecEnvWrapper
 
@@ -112,18 +114,30 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     log_root_path = os.path.join("logs", "rl_games", agent_cfg["params"]["config"]["name"])
     log_root_path = os.path.abspath(log_root_path)
     print(f"[INFO] Logging experiment in directory: {log_root_path}")
-    # specify directory for logging runs
+    # specify direcGen3ReachEnvCfgtory for logging runs
     log_dir = agent_cfg["params"]["config"].get("full_experiment_name", datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     # set directory into agent config
     # logging directory path: <train_dir>/<full_experiment_name>
     agent_cfg["params"]["config"]["train_dir"] = log_root_path
     agent_cfg["params"]["config"]["full_experiment_name"] = log_dir
 
-    # dump the configuration into log-directory
-    dump_yaml(os.path.join(log_root_path, log_dir, "params", "env.yaml"), env_cfg)
-    dump_yaml(os.path.join(log_root_path, log_dir, "params", "agent.yaml"), agent_cfg)
-    dump_pickle(os.path.join(log_root_path, log_dir, "params", "env.pkl"), env_cfg)
-    dump_pickle(os.path.join(log_root_path, log_dir, "params", "agent.pkl"), agent_cfg)
+    # Create the directory if it doesn't exist
+    params_dir = os.path.join(log_root_path, log_dir, "params")
+    os.makedirs(params_dir, exist_ok=True)
+
+    # Save YAML files
+    with open(os.path.join(params_dir, "env.yaml"), "w") as f:
+        yaml.dump(env_cfg, f, default_flow_style=False)
+    with open(os.path.join(params_dir, "agent.yaml"), "w") as f:
+        yaml.dump(agent_cfg, f, default_flow_style=False)
+
+    # Save Pickle files
+    with open(os.path.join(params_dir, "env.pkl"), "wb") as f:
+        pickle.dump(env_cfg, f)
+    with open(os.path.join(params_dir, "agent.pkl"), "wb") as f:
+        pickle.dump(agent_cfg, f)
+
+
 
     # read configurations about the agent-training
     rl_device = agent_cfg["params"]["config"]["device"]
