@@ -37,10 +37,10 @@ class Gen3ReachPolicy(PolicyController):
         ]
         # Load the pre-trained policy model and environment configuration
         repo_root = Path(__file__).resolve().parents[3]
-        model_dir = repo_root / "pretrained_models" / "reach"
+        model_dir = repo_root / "pretrained_models" / "reach" / "final_run"
         self.load_policy(
-            model_dir / "policy.pt",
-            model_dir / "env.yaml",
+            model_dir / "nn" / "reach_gen3.pth",
+            model_dir / "params" / "agent.yaml",
         )
 
         self._action_scale = 0.5
