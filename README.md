@@ -1,3 +1,21 @@
+For personal reference:
+
+- Setting up .usd for training:
+  - Get urdf. Import into isaacsim. Set joint properties. Save as .usd.
+  - Link it in isaacsim_assets kinova.py 
+
+- Training
+  - activate .venv and go to IsaacLab folder
+  - `./isaaclab.sh -p ../kinova_isaaclab_sim2real/scripts/rl_games/train.py --task Gen3-Reach-v0`
+  
+- Running on kinova
+  - training gives .pth checkpoint in IsaacLab logs which has to be converted to .pt policy files using `export_policy.py` file in rl_games/
+  - put this .pt file, env.yaml and agent.yaml (from log folder) to /pretrained_models/reach folder
+  - clean env.yaml file using clean_env_yaml.py script in sim2real/
+  - first run kinova using `ros2 launch kortex_bringup kortex_sim_control.launch.py   use_sim_time:=true   launch_rviz:=true vision:=true dof:=6` 
+  - then run script `python3 run_task_reach.py` in sim2real/
+
+
 # 🦾 Kinova Gen3 RL & Sim2Real Toolkit
 
 ## Overview
