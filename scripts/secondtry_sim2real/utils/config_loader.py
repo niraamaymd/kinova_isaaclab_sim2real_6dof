@@ -9,7 +9,7 @@
 import fnmatch
 import io
 from typing import List, Tuple
-import sys
+
 import yaml
 
 def parse_env_config(env_config_path: str = "env.yaml") -> dict:

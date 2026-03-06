@@ -1,27 +1,5 @@
-#!/usr/bin/env python3
-"""
-policy_controller.py
---------------------
-
-Minimal wrapper to load a TorchScript policy and expose helpers to:
-
-* build observations  – implemented in subclasses
-* compute actions     – via `_compute_action()`
-
-The class also extracts physics and robot-joint parameters from the
-`env.yaml` that accompanies each policy.
-
-Sub-classes must set `self.dof_names` before calling `load_policy`
-(in `__init__`) and implement:
-
-* `_compute_observation()`
-* `forward()`
-
-Author: Louis Le Lay
-"""
-
 import io
-import yaml
+
 import numpy as np
 import torch
 
@@ -52,17 +30,12 @@ class PolicyController:
         with open(policy_file_path, "rb") as f:
             file = io.BytesIO(f.read())
 
-        self.policy = torch.jit.load(policy_file_path, map_location='cpu')
-        self.policy.eval()
+        checkpoint = torch.load(policy_file_path, map_location='cpu', weights_only=False)
+        print(checkpoint.keys())
 
-        # Use a loader that ignores the !!python/object tags
-        with open(policy_env_path, 'r') as f:
-            # Using yaml.SafeLoader ensures we get a plain dictionary
-            # instead of a serialized class instance.
-            self.policy_env_params = yaml.load(f, Loader=yaml.SafeLoader)
+        self.policy = torch.jit.load(file)
+        self.policy_env_params = parse_env_config(policy_env_path)
 
-        # Now self.policy_env_params is a dictionary, 
-        # and your existing get_physics_properties will work!
         self._decimation, self._dt, self.render_interval = get_physics_properties(self.policy_env_params)
 
         print("\n--- Physics properties ---")
@@ -99,7 +72,6 @@ class PolicyController:
         with torch.no_grad():
             obs = torch.from_numpy(obs).view(1, -1).float()
             action = self.policy(obs).detach().view(-1).numpy()
-            print(f"Action array length: {len(action)}") # Debug print
         return action
 
     def _compute_observation(self) -> NotImplementedError:

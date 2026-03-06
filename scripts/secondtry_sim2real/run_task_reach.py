@@ -15,13 +15,9 @@ Author: Louis Le Lay
 
 import math
 
-import sys
-
 import numpy as np
 import rclpy
 from rclpy.node import Node
-from tf2_ros import TransformBroadcaster
-from geometry_msgs.msg import TransformStamped
 
 from builtin_interfaces.msg import Duration
 from control_msgs.msg import JointTrajectoryControllerState
@@ -58,13 +54,6 @@ class ReachPolicy(Node):
     STATE_TOPIC = '/joint_trajectory_controller/state'
     CMD_TOPIC = '/joint_trajectory_controller/joint_trajectory'
 
-    # ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/JointTrajectory "{
-    #     joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7],
-    #     points: [
-    #         { positions: [0, 0, 0, 0, 0, 0, 0], time_from_start: { sec: 10 } },
-    #     ]
-    # }" -1
-
     JOINT_NAMES = [
         'joint_1',
         'joint_2',
@@ -89,7 +78,7 @@ class ReachPolicy(Node):
         super().__init__('reach_policy_node')
         
         self.robot = Gen3ReachPolicy()
-        self.target_command = np.zeros(7)
+        self.target_command = np.zeros(6)
         self.step_size = 1.0 / 100  # 10 ms period = 100 Hz
         self.timer = self.create_timer(self.step_size, self.step_callback)
         self.i = 0
@@ -110,33 +99,8 @@ class ReachPolicy(Node):
         # Publisher for joint trajectory commands
         self.pub = self.create_publisher(JointTrajectory, self.CMD_TOPIC, 10)
         self.min_traj_dur = 1.0  # Minimum trajectory duration in seconds
-
-        self.tf_broadcaster = TransformBroadcaster(self)
-
+        
         self.get_logger().info("ReachPolicy node initialized.")
-
-    def broadcast_target_tf(self, target):
-        """Broadcasts the target [x, y, z, qw, qx, qy, qz] as a TF frame."""
-        t = TransformStamped()
-
-        # Read the time and set frames
-        t.header.stamp = self.get_clock().now().to_msg()
-        t.header.frame_id = 'base_link' # Parent frame
-        t.child_frame_id = 'policy_target_frame' # Name of the target frame
-
-        # Coordinates from your target_command array
-        t.transform.translation.x = float(target[0])
-        t.transform.translation.y = float(target[1])
-        t.transform.translation.z = float(target[2])
-
-        # Rotation from your target_command array
-        t.transform.rotation.w = float(target[3])
-        t.transform.rotation.x = float(target[4])
-        t.transform.rotation.y = float(target[5])
-        t.transform.rotation.z = float(target[6])
-
-        # Send the transformation
-        self.tf_broadcaster.sendTransform(t)
 
     def sub_callback(self, msg: JointTrajectoryControllerState):
         """
@@ -189,15 +153,11 @@ class ReachPolicy(Node):
         """
         # Set a constant target command for the robot (example values)
         if self.i%3000 < 1000:
-            #self.target_command = np.array([0.5, 0.0, 0.2, 0.7071, 0.0, 0.7071, 0.0])
-            self.target_command = np.array([0.4, -0.15, 0.3, 0.7071, 0.0, 0.7071, 0.0])
-        elif self.i%3000 < 2000 and self.i%3000 > 1000:
-            #self.target_command = np.array([0.4, -0.15, 0.3, 0.7071, 0.0, 0.7071, 0.0])
             self.target_command = np.array([0.5, 0.0, 0.2, 0.7071, 0.0, 0.7071, 0.0])
+        elif self.i%3000 < 2000 and self.i%3000 > 1000:
+            self.target_command = np.array([0.4, -0.15, 0.3, 0.7071, 0.0, 0.7071, 0.0])
         else:
             self.target_command = np.array([0.6, 0.1, 0.45, 0.7071, 0.0, 0.7071, 0.0])
-
-        self.broadcast_target_tf(self.target_command)
 
         # Get simulation joint positions from the robot's forward model
         joint_pos = self.robot.forward(self.step_size, self.target_command)
